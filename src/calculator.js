@@ -2,15 +2,56 @@
 
 const readline = require("node:readline");
 
-// Supports addition (+), subtraction (-), multiplication (* or ×), and division (/ or ÷).
+function validateOperands(...operands) {
+  if (!operands.every((operand) => Number.isFinite(operand))) {
+    throw new Error("Operands must be finite numbers.");
+  }
+}
+
+function validateResult(result) {
+  if (!Number.isFinite(result)) {
+    throw new Error("The result is outside the supported numeric range.");
+  }
+  return result;
+}
+
+function modulo(a, b) {
+  validateOperands(a, b);
+  if (b === 0) {
+    throw new Error("Cannot modulo by zero.");
+  }
+  return validateResult(a % b);
+}
+
+function power(base, exponent) {
+  validateOperands(base, exponent);
+  return validateResult(base ** exponent);
+}
+
+function squareRoot(n) {
+  validateOperands(n);
+  if (n < 0) {
+    throw new Error("Cannot take the square root of a negative number.");
+  }
+  return validateResult(Math.sqrt(n));
+}
+
+// Supports basic arithmetic, modulo (%), power (^), and square root (sqrt(...) or √...).
 function calculate(expression) {
   if (typeof expression !== "string") {
     throw new Error("Enter an expression with two numbers and one basic operator.");
   }
 
   const number = "-?(?:\\d+(?:\\.\\d*)?|\\.\\d+)";
+  const squareRootMatch = expression.match(
+    new RegExp(`^\\s*(?:sqrt\\s*\\(\\s*(${number})\\s*\\)|√\\s*(${number}))\\s*$`, "i"),
+  );
+  if (squareRootMatch) {
+    return squareRoot(Number(squareRootMatch[1] ?? squareRootMatch[2]));
+  }
+
   const match = expression.match(
-    new RegExp(`^\\s*(${number})\\s*([+*/×÷-])\\s*(${number})\\s*$`),
+    new RegExp(`^\\s*(${number})\\s*([+*/×÷%^-])\\s*(${number})\\s*$`),
   );
 
   if (!match) {
@@ -22,6 +63,9 @@ function calculate(expression) {
   const right = Number(match[3]);
   let result;
 
+  if (!Number.isFinite(left) || !Number.isFinite(right)) {
+    throw new Error("The result is outside the supported numeric range.");
+  }
   switch (operator) {
     case "+":
       result = left + right;
@@ -40,13 +84,15 @@ function calculate(expression) {
       }
       result = left / right;
       break;
+    case "%":
+      result = modulo(left, right);
+      break;
+    case "^":
+      result = power(left, right);
+      break;
   }
 
-  if (!Number.isFinite(result)) {
-    throw new Error("The result is outside the supported numeric range.");
-  }
-
-  return result;
+  return validateResult(result);
 }
 
 function runCalculator() {
@@ -85,4 +131,4 @@ if (require.main === module) {
   runCalculator();
 }
 
-module.exports = { calculate };
+module.exports = { calculate, modulo, power, squareRoot };
